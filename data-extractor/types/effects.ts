@@ -1,4 +1,6 @@
 import {GameState, ResultDamage} from './game';
+import {ClassToUnit, Unit} from './units';
+import {globalRootPath, loadFile} from '../sval/loader';
 
 export abstract class Effect {
 
@@ -40,13 +42,20 @@ export class Damage extends Effect {
   static fromSval(sval: any): Damage {
     return new Damage({
       ...Effect.svalKeys(sval),
+      ...Damage.svalKeys(sval)
+    });
+  }
+
+  static svalKeys(sval: any): any {
+    return {
+      ...Effect.svalKeys(sval),
       physical: sval['physical'],
       magical: sval['magical'],
       armorMul: sval['armor-mul'],
       resistanceMul: sval['resistance-mul'],
       melee: sval['melee'],
       trueStrike: sval['true-strike']
-    });
+    };
   }
 
   calculateDamage(state: GameState): ResultDamage {
@@ -79,16 +88,26 @@ export class Decimate extends Effect {
 
   constructor(data: any) {
     super(data);
-    this.amount = data.amount;
-    this.amountMax = data['amount-max'];
-    this.mana = data.mana;
-    this.manaMax = data['mana-max'];
+    this.amount = data.amount || this.amount;
+    this.amountMax = data.amountMax || this.amountMax;
+    this.mana = data.mana || this.mana;
+    this.manaMax = data.manaMax || this.manaMax;
   }
 
-  readonly amount: number;
-  readonly amountMax: number;
-  readonly mana: number;
-  readonly manaMax: number;
+  readonly amount: number = 0;
+  readonly amountMax: number = 0;
+  readonly mana: number = 0;
+  readonly manaMax: number = 0;
+
+  static fromSval(sval: any): Decimate {
+    return new Decimate({
+      ...Effect.svalKeys(sval),
+      amount: sval['amount'],
+      amountMax: sval['amount-max'],
+      mana: sval['mana'],
+      manaMax: sval['mana-max']
+    });
+  }
 
   calculateDamage(state: GameState): ResultDamage {
     return {
@@ -119,10 +138,17 @@ export class Heal extends Effect {
 
   constructor(data: any) {
     super(data);
-    this.heal = data.heal;
+    this.heal = data.heal || this.heal;
   }
 
-  readonly heal: number;
+  readonly heal: number = 0;
+
+  static fromSval(sval: any): Heal {
+    return new Heal({
+      ...Effect.svalKeys(sval),
+      heal: sval['heal']
+    });
+  }
 
   calculateDamage(state: GameState): ResultDamage {
     return {
@@ -187,16 +213,135 @@ export class ExplodeEffect extends Effect {
 
   readonly selfDamage: number = 0;
   readonly teamDamage: number = 0;
-  readonly enemyDamage: number = 0;
+  readonly enemyDamage: number = 1;
   readonly effects: Effect[] = [];
 
-  static fromSval(sval: any): ApplyBuff {
-    return new ApplyBuff({
+  static fromSval(sval: any): ExplodeEffect {
+    return new ExplodeEffect({
       ...Effect.svalKeys(sval),
       selfDamage: sval['self-damage'],
       teamDamage: sval['team-damage'],
       enemyDamage: sval['enemy-damage'],
       effects: LoadEffects(sval)
+    });
+  }
+
+  calculateDamage(state: GameState): ResultDamage {
+    return {
+      physical: 0,
+      magical: 0
+    };
+  }
+}
+
+export class BogusDamage extends Damage {
+
+  constructor(data: any) {
+    super(data);
+  }
+
+  static fromSval(sval: any): BogusDamage {
+    return new BogusDamage({
+      ...Damage.svalKeys(sval),
+    });
+  }
+
+  calculateDamage(state: GameState): ResultDamage {
+    return {
+      physical: 0,
+      magical: 0
+    };
+  }
+}
+
+export class ScorchEarth extends Effect {
+
+  constructor(data: any) {
+    super(data);
+    this.duration = data.duration || this.duration;
+    this.chance = data.chance || this.chance;
+  }
+
+  readonly duration: number = 2000;
+  readonly chance: number = 1;
+
+  static fromSval(sval: any): ScorchEarth {
+    return new ScorchEarth({
+      ...Effect.svalKeys(sval),
+      duration: sval['duration'],
+      chance: sval['chance']
+    });
+  }
+
+  calculateDamage(state: GameState): ResultDamage {
+    return {
+      physical: 0,
+      magical: 0
+    };
+  }
+}
+
+export class PlaySound extends Effect {
+
+  constructor(data: any) {
+    super(data);
+    this.sound = data.sound;
+  }
+
+  readonly sound: string;
+
+  static fromSval(sval: any): PlaySound {
+    return new PlaySound({
+      ...Effect.svalKeys(sval),
+      sound: sval['sound']
+    });
+  }
+
+  calculateDamage(state: GameState): ResultDamage {
+    return {
+      physical: 0,
+      magical: 0
+    };
+  }
+}
+
+export class SpawnEffect extends Effect {
+
+  constructor(data: any) {
+    super(data);
+    this.effect = data.effect;
+  }
+
+  readonly effect: string;
+
+  static fromSval(sval: any): SpawnEffect {
+    return new SpawnEffect({
+      ...Effect.svalKeys(sval),
+      effect: sval['effect']
+    });
+  }
+
+  calculateDamage(state: GameState): ResultDamage {
+    return {
+      physical: 0,
+      magical: 0
+    };
+  }
+}
+
+export class SpawnUnitEffect extends Effect {
+
+  constructor(data: any) {
+    super(data);
+    this.unit = data.unit;
+  }
+
+  readonly unit: Unit[];
+
+  static fromSval(sval: any): SpawnUnitEffect {
+    return new SpawnUnitEffect({
+      ...Effect.svalKeys(sval),
+      unit: ClassToUnit(loadFile(globalRootPath, sval['unit'])[0])
     });
   }
 
@@ -219,16 +364,6 @@ export function ClassToEffect(sval: any): Effect {
 
   throw new Error('Effect not found: ' + sval['class']);
 }
-
-const class_to_effect = {
-  'Damage': Damage,
-  'Decimate': Decimate,
-  'GiveMana': GiveMana,
-  'Heal': Heal,
-  'LifestealDamage': LifestealDamage,
-  'ApplyBuff': ApplyBuff,
-  'Explode': ExplodeEffect,
-};
 
 function roundDamage(damage: number): number {
   if (damage === 0) {
@@ -273,3 +408,18 @@ export function LoadEffects(sval: any, prefix = ''): Effect[] {
 
   return [];
 }
+
+const class_to_effect = {
+  'Damage': Damage,
+  'Decimate': Decimate,
+  'GiveMana': GiveMana,
+  'Heal': Heal,
+  'LifestealDamage': LifestealDamage,
+  'ApplyBuff': ApplyBuff,
+  'Explode': ExplodeEffect,
+  'BogusDamage': BogusDamage,
+  'Skills::ScorchEarth': ScorchEarth,
+  'PlaySound': PlaySound,
+  'SpawnEffect': SpawnEffect,
+  'SpawnUnit': SpawnUnitEffect,
+};

@@ -90,8 +90,35 @@ function svalXmlToObject(node: Element, debug = false, depth = 0): any {
         }
       }
 
-      return dict;
+      return processDictionary(node, debug, depth);
+    case 'unit':
+      for (let i = 0; i < node.childNodes.length; i++) {
+        if (node.childNodes.item(i).constructor.name === 'Element') {
+          return {
+            ...processDictionary(node.childNodes.item(i) as Element, debug, depth),
+            class: (node.childNodes.item(i) as Element).getAttribute('class')
+          };
+        }
+      }
+
+      break;
   }
 
   throw new Error('Unknown data type: ' + node.tagName);
+}
+
+function processDictionary(node: Element, debug = false, depth = 0): any {
+  const dict = {};
+
+  for (let i = 0; i < node.childNodes.length; i++) {
+    if (node.childNodes.item(i).constructor.name === 'Element') {
+      const name = (node.childNodes.item(i) as Element).getAttribute('name');
+      const obj = svalXmlToObject(node.childNodes.item(i) as Element, debug, depth);
+      if (obj) {
+        dict[name] = obj;
+      }
+    }
+  }
+
+  return dict;
 }

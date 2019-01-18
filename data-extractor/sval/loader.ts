@@ -5,14 +5,23 @@ import {svalToObject} from './processor';
 import {Skill} from '../types';
 import {GameState, ResultDamage, sumDamage} from '../types/game';
 
+export let globalRootPath = '';
+
 export function loadData(rootPath: string) {
+  globalRootPath = rootPath;
+
   validateCodebase(rootPath);
 
   loadCharacter(rootPath, 'paladin');
   loadCharacter(rootPath, 'priest');
+  loadCharacter(rootPath, 'ranger');
+  loadCharacter(rootPath, 'sorcerer');
+  loadCharacter(rootPath, 'thief');
+  loadCharacter(rootPath, 'warlock');
+  loadCharacter(rootPath, 'wizard');
 }
 
-function loadFile(rootPath: string, file: string): any[] {
+export function loadFile(rootPath: string, file: string): any[] {
   const absolutePath = path.normalize(path.join(rootPath, file));
 
   try {
@@ -44,7 +53,8 @@ function loadCharacter(rootPath: string, name: string) {
   const character = loadFile(rootPath, 'players/' + name + '/char.sval')[0];
 
   for (const skillPath of character['skills']) {
-    console.log(Skill.fromSval(loadFile(rootPath, skillPath)[0]));
+    const skill = Skill.fromSval(loadFile(rootPath, skillPath)[0]);
+    // console.log(skill);
   }
 
   /*
