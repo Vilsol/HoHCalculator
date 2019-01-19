@@ -1,6 +1,7 @@
 import {GameState, ResultDamage} from './game';
 import {ClassToUnit, Unit} from './units';
-import {globalRootPath, loadFile} from '../sval/loader';
+import {globalRootPath, LoadBuff, loadFile} from '../sval/loader';
+import {Projectile} from './projectiles';
 
 export abstract class Effect {
 
@@ -126,6 +127,13 @@ export class GiveMana extends Effect {
 
   readonly mana: number;
 
+  static fromSval(sval: any): GiveMana {
+    return new GiveMana({
+      ...Effect.svalKeys(sval),
+      mana: sval['mana']
+    });
+  }
+
   calculateDamage(state: GameState): ResultDamage {
     return {
       physical: 0,
@@ -158,16 +166,24 @@ export class Heal extends Effect {
   }
 }
 
-export class LifestealDamage extends Effect {
+export class LifestealDamage extends Damage {
 
   constructor(data: any) {
     super(data);
-    this.lifesteal = data.lifesteal;
-    this.manasteal = data.manasteal;
+    this.lifeSteal = data.lifeSteal;
+    this.manaSteal = data.manaSteal;
   }
 
-  readonly lifesteal: number;
-  readonly manasteal: number;
+  readonly lifeSteal: number;
+  readonly manaSteal: number;
+
+  static fromSval(sval: any): LifestealDamage {
+    return new LifestealDamage({
+      ...Damage.svalKeys(sval),
+      lifeSteal: sval['lifesteal'],
+      manaSteal: sval['manasteal'],
+    });
+  }
 
   calculateDamage(state: GameState): ResultDamage {
     return {
@@ -189,7 +205,7 @@ export class ApplyBuff extends Effect {
   static fromSval(sval: any): ApplyBuff {
     return new ApplyBuff({
       ...Effect.svalKeys(sval),
-      buff: sval['buff'] // TODO Convert
+      buff: LoadBuff(globalRootPath, sval['buff'])
     });
   }
 
@@ -279,6 +295,7 @@ export class ScorchEarth extends Effect {
       magical: 0
     };
   }
+
 }
 
 export class PlaySound extends Effect {
@@ -339,9 +356,192 @@ export class SpawnUnitEffect extends Effect {
   readonly unit: Unit[];
 
   static fromSval(sval: any): SpawnUnitEffect {
+    const unitData = loadFile(globalRootPath, sval['unit'])[0];
     return new SpawnUnitEffect({
       ...Effect.svalKeys(sval),
-      unit: ClassToUnit(loadFile(globalRootPath, sval['unit'])[0])
+      unit: unitData ? ClassToUnit(unitData) : undefined // TODO Wat
+    });
+  }
+
+  calculateDamage(state: GameState): ResultDamage {
+    return {
+      physical: 0,
+      magical: 0
+    };
+  }
+}
+
+export class ToggleCombustion extends Effect {
+
+  constructor(data: any) {
+    super(data);
+    this.enable = data.enable;
+  }
+
+  readonly enable: boolean;
+
+  static fromSval(sval: any): ToggleCombustion {
+    return new ToggleCombustion({
+      ...Effect.svalKeys(sval),
+      enable: sval['enable']
+    });
+  }
+
+  calculateDamage(state: GameState): ResultDamage {
+    return {
+      physical: 0,
+      magical: 0
+    };
+  }
+}
+
+export class KillSameType extends Effect {
+
+  constructor(data: any) {
+    super(data);
+    this.range = data.range;
+    this.effects = data.effects;
+  }
+
+  readonly range: number;
+  readonly effects: Effect[];
+
+  static fromSval(sval: any): KillSameType {
+    return new KillSameType({
+      ...Effect.svalKeys(sval),
+      range: sval['range'],
+      effects: LoadEffects(sval)
+    });
+  }
+
+  calculateDamage(state: GameState): ResultDamage {
+    return {
+      physical: 0,
+      magical: 0
+    };
+  }
+}
+
+export class GiveCombo extends Effect {
+
+  constructor(data: any) {
+    super(data);
+    this.time = data.time || this.time;
+  }
+
+  readonly time: number = 2000;
+
+  static fromSval(sval: any): GiveCombo {
+    return new GiveCombo({
+      ...Effect.svalKeys(sval),
+      time: sval['time'],
+    });
+  }
+
+  calculateDamage(state: GameState): ResultDamage {
+    return {
+      physical: 0,
+      magical: 0
+    };
+  }
+}
+
+export class ShootProjectileEffect extends Effect {
+
+  constructor(data: any) {
+    super(data);
+    this.projectile = data.projectile;
+    this.projectiles = data.projectiles || this.projectiles;
+  }
+
+  readonly projectile: Projectile;
+  readonly projectiles: number = 1;
+
+  static fromSval(sval: any): ShootProjectileEffect {
+    return new ShootProjectileEffect({
+      ...ShootProjectileEffect.svalKeys(sval)
+    });
+  }
+
+  static svalKeys(sval: any): any {
+    return {
+      ...Effect.svalKeys(sval),
+      projectile: ClassToUnit(loadFile(globalRootPath, sval['projectile'])[0]),
+      projectiles: sval['projectiles']
+    };
+  }
+
+  calculateDamage(state: GameState): ResultDamage {
+    return {
+      physical: 0,
+      magical: 0
+    };
+  }
+}
+
+export class ShootProjectileFanEffect extends ShootProjectileEffect {
+
+  constructor(data: any) {
+    super(data);
+  }
+
+  static fromSval(sval: any): ShootProjectileFanEffect {
+    return new ShootProjectileFanEffect({
+      ...ShootProjectileEffect.svalKeys(sval),
+    });
+  }
+
+  calculateDamage(state: GameState): ResultDamage {
+    return {
+      physical: 0,
+      magical: 0
+    };
+  }
+}
+
+export class ExplodeChainLimit extends ExplodeEffect {
+
+  constructor(data: any) {
+    super(data);
+    this.limit = data.limit || this.limit;
+  }
+
+  readonly limit: number = 1;
+
+  static fromSval(sval: any): ExplodeChainLimit {
+    return new ExplodeChainLimit({
+      ...ExplodeChainLimit.svalKeys(sval),
+      limit: sval['limit']
+    });
+  }
+
+  calculateDamage(state: GameState): ResultDamage {
+    return {
+      physical: 0,
+      magical: 0
+    };
+  }
+}
+
+export class ShootBolt extends Effect {
+
+  constructor(data: any) {
+    super(data);
+    this.height = data.height || this.height;
+    this.spread = data.spread || this.spread;
+    this.effects = data.effects;
+  }
+
+  readonly height: number = 0;
+  readonly spread: number = 0;
+  readonly effects: Effect[];
+
+  static fromSval(sval: any): ShootBolt {
+    return new ShootBolt({
+      ...Effect.svalKeys(sval),
+      height: sval['height'],
+      spread: sval['spread'],
+      effects: LoadEffects(sval)
     });
   }
 
@@ -422,4 +622,11 @@ const class_to_effect = {
   'PlaySound': PlaySound,
   'SpawnEffect': SpawnEffect,
   'SpawnUnit': SpawnUnitEffect,
+  'ToggleCombustion': ToggleCombustion,
+  'KillSameType': KillSameType,
+  'GiveCombo': GiveCombo,
+  'ShootProjectile': ShootProjectileEffect,
+  'ShootProjectileFan': ShootProjectileFanEffect,
+  'ExplodeChainLimit': ExplodeChainLimit,
+  'ShootBolt': ShootBolt,
 };

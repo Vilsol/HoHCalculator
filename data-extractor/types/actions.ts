@@ -1,4 +1,4 @@
-import {Effect, LoadEffects, ScorchEarth} from './effects';
+import {Effect, LoadEffects} from './effects';
 import {ClassToUnit, Unit} from './units';
 import {GameState, ResultDamage} from './game';
 import {globalRootPath, loadFile} from '../sval/loader';
@@ -71,6 +71,68 @@ export class SpawnUnitAction extends Action {
 
 }
 
+export class ScorchEarthAction extends Action {
+
+  constructor(data: any) {
+    super(data);
+    this.duration = data.duration || this.duration;
+    this.chance = data.chance || this.chance;
+  }
+
+  readonly duration: number = 2000;
+  readonly chance: number = 1;
+
+  static fromSval(sval: any): ScorchEarthAction {
+    return new ScorchEarthAction({
+      ...Effect.svalKeys(sval),
+      duration: sval['duration'],
+      chance: sval['chance']
+    });
+  }
+
+  calculateDamage(state: GameState): ResultDamage {
+    return {
+      physical: 0,
+      magical: 0
+    };
+  }
+
+}
+
+export class HwSpawnUnit extends Action {
+
+  constructor(data: any) {
+    super(data);
+    this.units = data.units;
+    this.safeSpawn = data.safeSpawn || this.safeSpawn;
+    this.safeDist = data.safeDist || this.safeDist;
+    this.aggro = data.aggro || this.aggro;
+  }
+
+  readonly units: Unit[];
+  readonly safeSpawn: boolean = false;
+  readonly safeDist: number = 0;
+  readonly aggro: boolean = false;
+
+  static fromSval(sval: any): HwSpawnUnit {
+    return new HwSpawnUnit({
+      ...Effect.svalKeys(sval),
+      units: sval['units'].filter(p => typeof p === 'string').map(unit => ClassToUnit(loadFile(globalRootPath, unit)[0])),
+      safeSpawn: sval['safe-spawn'],
+      safeDist: sval['safe-dist'],
+      aggro: sval['aggro']
+    });
+  }
+
+  calculateDamage(state: GameState): ResultDamage {
+    return {
+      physical: 0,
+      magical: 0
+    };
+  }
+
+}
+
 export function ClassToAction(sval: any): Action {
   if (class_to_action[sval['class']]) {
     if (class_to_action[sval['class']]['fromSval']) {
@@ -97,5 +159,6 @@ export function LoadActions(sval: any, prefix = ''): Action[] {
 const class_to_action = {
   'Explode': ExplodeAction,
   'SpawnUnit': SpawnUnitAction,
-  'Skills::ScorchEarth': ScorchEarth,
+  'Skills::ScorchEarth': ScorchEarthAction,
+  'HwSpawnUnit': HwSpawnUnit,
 };

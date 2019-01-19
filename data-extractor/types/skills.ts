@@ -5,7 +5,7 @@ import {Buff} from './buffs';
 import {Projectile} from './projectiles';
 import {Effect, LoadEffects} from './effects';
 import {GameState, reduceSumDamage, ResultDamage} from './game';
-import {globalRootPath, loadFile} from '../sval/loader';
+import {globalRootPath, LoadBuff, loadFile} from '../sval/loader';
 
 export class Skill {
 
@@ -321,7 +321,7 @@ export class ExtendedDomain extends SkillLevel {
     return new ExtendedDomain({
       ...SkillLevel.svalKeys(sval),
       rangeMultiplier: sval['range-mul'],
-      modifiers: sval['modifiers'] // TODO Convert
+      modifiers: LoadModifiers(sval)
     });
   }
 
@@ -661,8 +661,8 @@ export class TempBuffAoe extends ActiveSkill {
   static fromSval(sval: any): TempBuffAoe {
     return new TempBuffAoe({
       ...ActiveSkill.svalKeys(sval),
-      buff: sval['buff'], // TODO Convert
-      buffTeam: sval['buff-team'], // TODO Convert
+      buff: LoadBuff(globalRootPath, sval['buff']),
+      buffTeam: LoadBuff(globalRootPath, sval['buff-team']),
       interval: sval['interval'],
       activeTime: sval['active-time'],
       modifiers: sval['modifiers']

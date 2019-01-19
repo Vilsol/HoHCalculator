@@ -49,6 +49,7 @@ function svalXmlToObject(node: Element, debug = false, depth = 0): any {
   switch (node.tagName) {
     case 'loader':
     case 'null':
+    case 'scene':
       return undefined;
     case 'string':
       return node.childNodes.item(0) ? node.childNodes.item(0).nodeValue : undefined;
@@ -64,7 +65,6 @@ function svalXmlToObject(node: Element, debug = false, depth = 0): any {
     case 'vec4':
       return node.childNodes.item(0) ? node.childNodes.item(0).nodeValue.split(' ').map(x => parseInt(x, 10)) : undefined;
     case 'array':
-    case 'svals':
       const arr = [];
 
       for (let i = 0; i < node.childNodes.length; i++) {
@@ -77,6 +77,7 @@ function svalXmlToObject(node: Element, debug = false, depth = 0): any {
       }
 
       return arr;
+    case 'svals':
     case 'dict':
       const dict = {};
 

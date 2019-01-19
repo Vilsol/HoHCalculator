@@ -265,14 +265,44 @@ export class SorcererOrbProjectile extends RayProjectile {
 
 }
 
+export class LurkerProjectile extends RayProjectile {
+
+  constructor(data: any) {
+    super(data);
+    this.ignoreAtHardness = data.ignoreAtHardness || this.ignoreAtHardness;
+    this.destroyAtHardness = data.destroyAtHardness || this.destroyAtHardness;
+    this.spawnFrequency = data.spawnFrequency;
+  }
+
+  readonly ignoreAtHardness: number = -1;
+  readonly destroyAtHardness: number = -1;
+  readonly spawnFrequency: number;
+
+  static fromSval(sval: any): LurkerProjectile {
+    return new LurkerProjectile({
+      ...RayProjectile.svalKeys(sval),
+      ignoreAtHardness: sval['ignore-at-hardness'],
+      destroyAtHardness: sval['destroy-at-hardness'],
+      spawnFrequency: sval['spawn-freq'],
+    });
+  }
+
+  calculateDamage(state: GameState): ResultDamage {
+    return {
+      physical: 0,
+      magical: 0
+    };
+  }
+
+}
+
 export class BoltShooter extends Unit {
 
   constructor(data: any) {
     super(data);
     this.ttl = data.ttl;
     this.bolts = data.bolts;
-    // TODO Fix
-    this.useStormlash = data.useStormlash || this.useStormlash;
+    this.useStormlash = (data.useStormlash === undefined ? this.useStormlash : data.useStormlash);
     this.consecutiveMultiplier = data.consecutiveMultiplier || this.consecutiveMultiplier;
     this.effects = data.effects;
     this.linkEffects = data.linkEffects;
@@ -312,7 +342,7 @@ export class BombBehavior extends Unit {
     super(data);
     this.team = data.team || this.team;
     this.delay = data.delay || this.delay;
-    this.delayRandom = data.delayRandom || this.delayRandom;
+    this.delayRandom = (data.delayRandom === undefined ? this.delayRandom : data.delayRandom);
     this.actions = data.actions;
   }
 
@@ -446,6 +476,28 @@ export class GargoyleSpawner extends Unit {
 
 }
 
+// TODO
+export class CompositeActorBehavior extends Unit {
+
+  constructor(data: any) {
+    super(data);
+  }
+
+  static fromSval(sval: any): CompositeActorBehavior {
+    return new CompositeActorBehavior({
+      ...Unit.svalKeys(sval),
+    });
+  }
+
+  calculateDamage(state: GameState): ResultDamage {
+    return {
+      physical: 0,
+      magical: 0
+    };
+  }
+
+}
+
 export function ClassToUnit(sval: any): Unit {
   if (class_to_unit[sval['class']]) {
     if (class_to_unit[sval['class']]['fromSval']) {
@@ -470,4 +522,6 @@ const class_to_unit = {
   'DangerAreaBehavior': DangerAreaBehavior,
   'PriestGroundCircle': PriestGroundCircle,
   'GargoyleSpawner': GargoyleSpawner,
+  'CompositeActorBehavior': CompositeActorBehavior,
+  'LurkerProjectile': LurkerProjectile,
 };
